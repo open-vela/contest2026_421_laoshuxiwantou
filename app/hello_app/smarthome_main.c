@@ -18,6 +18,7 @@
 #include <sys/boardctl.h>
 
 #include <lvgl/lvgl.h>
+#include <lvgl/src/drivers/nuttx/lv_nuttx_touchscreen.h>
 
 #include "smarthome_types.h"
 #include "smarthome_internal.h"
@@ -108,6 +109,28 @@ int main(int argc, FAR char *argv[])
     {
       printf("[SM] ERROR: display/touch init failed\n");
       return 1;
+    }
+
+  /* 触摸 indev 兜底重试：rcS 自启时机可能早于 GT911 驱动注册，
+   * lv_nuttx_init 打开 /dev/input0 失败会静默返回 NULL（无输入且无日志），
+   * 这里显式重试直到设备就绪。 */
+  if (result.indev == NULL)
+    {
+      for (i = 0; i < 10 && result.indev == NULL; i++)
+        {
+          printf("[SM] touch indev missing, retry %d/10 in 500ms\n", i + 1);
+          usleep(500 * 1000);
+          result.indev = lv_nuttx_touchscreen_create(SM_TOUCH_DEVPATH);
+        }
+
+      if (result.indev == NULL)
+        {
+          printf("[SM] ERROR: no touchscreen after retries, UI runs without input\n");
+        }
+      else
+        {
+          printf("[SM] touchscreen attached on retry\n");
+        }
     }
 
   sm_ui_init();
