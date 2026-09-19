@@ -39,8 +39,13 @@
  * 假传感器/网络 tick 的响应节奏 */
 #define SM_LOOP_SLEEP_MAX_MS 20
 
+/* 心跳周期（主循环拍数）：~500 拍 ≈ 5-10s，用于确认任务存活 */
+#define SM_LOOP_BEAT_PERIOD 500
+
 /* 触摸设备路径（D12X demo68-nor GT911） */
 #define SM_TOUCH_DEVPATH "/dev/input0"
+
+static uint32_t g_loop_beats;
 
 /****************************************************************************
  * Public Functions
@@ -160,6 +165,22 @@ int main(int argc, FAR char *argv[])
       sm_sim_sensor_tick();
       sm_ui_tick();
       sm_net_tick();
+
+      if (++g_loop_beats >= SM_LOOP_BEAT_PERIOD)
+        {
+          sm_device_t *sensor = sm_get_device("sensor1");
+
+          g_loop_beats = 0;
+          if (sensor != NULL)
+            {
+              printf("[SM] alive, sensor1 temp=%d.%d C\n",
+                     sensor->temp / 10, sensor->temp % 10);
+            }
+          else
+            {
+              printf("[SM] alive (no sensor1 in table)\n");
+            }
+        }
 
       if (idle > SM_LOOP_SLEEP_MAX_MS)
         {
