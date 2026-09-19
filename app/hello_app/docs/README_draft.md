@@ -32,7 +32,7 @@ contest2026_421_laoshuxiwantou/
 │   ├── smarthome_types.h       #   冻结契约：物模型/规则/引擎 API（只读，修改须走主集成者）
 │   ├── smarthome_storage.h     #   冻结契约：JSON 持久化 schema 与存储 API
 │   ├── smarthome_internal.h    #   内部接口：beep/假传感器/网络 tick
-│   ├── hello_app_main.c        #   主程序入口（主循环：LVGL tick + 引擎/UI/网络/假传感器 tick）
+│   ├── smarthome_main.c        #   主程序入口（主循环：LVGL tick + 引擎/UI/网络/假传感器 tick）
 │   ├── engine/                 #   规则引擎轨：求值（边沿触发+链式联动）、JSON 解析、SD 持久化、提示音、假传感器、host 自测
 │   ├── ui/                     #   UI 轨：三页面（总览/场景/规则编辑）+ 顶栏 + tab 栏，480x272 全触控
 │   ├── sim/                    #   协议层轨：TCP 回环/UART 传输 + 状态差量发布/指令执行（PC 模拟器配套）

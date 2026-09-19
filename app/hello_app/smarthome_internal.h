@@ -43,6 +43,15 @@ int sm_net_start_uart(const char *devpath, int baud);
  * 规则命中事件转发（evt:rule）。内部无线程无阻塞。 */
 void sm_net_tick(void);
 
+/* ---- sim/ 板内"手机"回环演示（sm_phone_demo.c，集成者维护） ------------ */
+
+/* 主入口识别 `smarthome --phone` 后调用；经 127.0.0.1 回环按脚本发送
+ * 与 PC 模拟器相同的 set 指令（真 socket 代码路径）。 */
+void sm_phone_demo_start(uint16_t port);
+
+/* 主循环每拍调用；非阻塞推进连接与脚本发送。 */
+void sm_phone_demo_tick(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -13,6 +13,7 @@
 #include <nuttx/config.h>
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/boardctl.h>
 
@@ -87,10 +88,16 @@ int main(int argc, FAR char *argv[])
   sm_ui_init();
 
   /* 远程呈现通道（no-go 替身，失败不影响本地演示）：
-   * 优先 TCP 回环（模拟器拓扑），退化 UART（板上串口拓扑） */
+   * 优先 TCP 回环（模拟器/板内回环拓扑），退化 UART（板上串口拓扑） */
   if (sm_net_start_tcp(9000) != SM_OK)
     {
       (void)sm_net_start_uart("/dev/ttyS1", 115200);
+    }
+
+  /* `smarthome --phone`：板内"手机"回环演示客户端（真 socket 代码路径） */
+  if (argc > 1 && strcmp(argv[1], "--phone") == 0)
+    {
+      sm_phone_demo_start(9000);
     }
 
   printf("[SM] entering main loop\n");

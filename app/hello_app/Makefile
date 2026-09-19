@@ -19,7 +19,10 @@ CSRCS = engine/sm_engine.c \
         ui/sm_ui.c \
         ui/sm_ui_overview.c \
         ui/sm_ui_scene.c \
-        ui/sm_ui_rules.c
+        ui/sm_ui_rules.c \
+        sim/sm_net.c \
+        sim/sm_proto.c \
+        sim/sm_phone_demo.c
 
 MAINSRC = smarthome_main.c
 
