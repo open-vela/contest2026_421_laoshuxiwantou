@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "r1",
+      "name": "high temp light on",
+      "enabled": true,
+      "cond": {
+        "type": "attr",
+        "dev": "sensor1",
+        "prop": "temp",
+        "op": ">=",
+        "value": 300
+      },
+      "action": {
+        "type": "set",
+        "dev": "light1",
+        "prop": "on",
+        "value": 1
+      }
+    },
+    {
+      "id": "r2",
+      "name": "low temp light off",
+      "enabled": true,
+      "cond": {
+        "type": "attr",
+        "dev": "sensor1",
+        "prop": "temp",
+        "op": "<=",
+        "value": 250
+      },
+      "action": {
+        "type": "set",
+        "dev": "light1",
+        "prop": "on",
+        "value": 0
+      }
+    },
+    {
+      "id": "r3",
+      "name": "bright socket on",
+      "enabled": true,
+      "cond": {
+        "type": "attr",
+        "dev": "light1",
+        "prop": "brightness",
+        "op": ">=",
+        "value": 80
+      },
+      "action": {
+        "type": "set",
+        "dev": "socket1",
+        "prop": "on",
+        "value": 1
+      }
+    },
+    {
+      "id": "r4",
+      "name": "high temp beep",
+      "enabled": true,
+      "cond": {
+        "type": "attr",
+        "dev": "sensor1",
+        "prop": "temp",
+        "op": ">=",
+        "value": 320
+      },
+      "action": {
+        "type": "beep"
+      }
+    },
+    {
+      "id": "r5",
+      "name": "socket on light2 on",
+      "enabled": true,
+      "cond": {
+        "type": "attr",
+        "dev": "socket1",
+        "prop": "on",
+        "op": "==",
+        "value": 1
+      },
+      "action": {
+        "type": "set",
+        "dev": "light2",
+        "prop": "on",
+        "value": 1
+      }
+    },
+    {
+      "id": "r6",
+      "name": "socket off light2 off",
+      "enabled": true,
+      "cond": {
+        "type": "attr",
+        "dev": "socket1",
+        "prop": "on",
+        "op": "==",
+        "value": 0
+      },
+      "action": {
+        "type": "set",
+        "dev": "light2",
+        "prop": "on",
+        "value": 0
+      }
+    }
+  ]
+}

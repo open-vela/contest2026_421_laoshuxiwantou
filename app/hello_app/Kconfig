@@ -4,7 +4,7 @@
 #
 
 config LVX_USE_DEMO_CONTEST2026_000_HELLO_APP
-	bool "Contest 2026 team 000 hello app"
+	bool "Contest 2026 team 421 smarthome panel"
 	default n
 	---help---
-		Enable the contest 2026 team 000 hello app demo.
+		Enable the contest 2026 team 421 smarthome control panel app.

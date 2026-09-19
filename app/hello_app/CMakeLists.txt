@@ -1,7 +1,11 @@
-# Contest 2026 team 000 hello app
+# Contest 2026 team 421 smarthome control panel app
 if(CONFIG_LVX_USE_DEMO_CONTEST2026_000_HELLO_APP)
+  file(GLOB SMARTHOME_ENGINE_SRCS engine/*.c)
+  file(GLOB SMARTHOME_UI_SRCS ui/*.c)
+  list(FILTER SMARTHOME_ENGINE_SRCS EXCLUDE REGEX "selftest_main\\.c$")
   nuttx_add_application(
-    NAME hello_app
-    SRCS hello_app_main.c
-    STACKSIZE 2048)
+    NAME smarthome
+    SRCS smarthome_main.c ${SMARTHOME_ENGINE_SRCS} ${SMARTHOME_UI_SRCS}
+    STACKSIZE 262144
+    INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
