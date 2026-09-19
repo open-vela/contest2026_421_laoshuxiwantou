@@ -10,6 +10,9 @@
  *   - sm_set_device：校验设备/属性/类型匹配 → 更新状态 → 规则求值
  *   - 求值：边沿触发（条件 false→true 执行动作并回调），动作引起的
  *     状态变化继续参与求值（链式联动），迭代至稳定，上限 4 轮防环
+ *   - 持久化：on/brightness 变更（含 UI/网络/规则联动路径）经
+ *     sm_engine_tick 防抖 500ms 落盘 devices.json（temp 除外）；
+ *     rules 落盘仅 UI Save（persist=true）与恢复出厂
  *
  * 线程模型：整个应用单任务运行（无锁），UI/网络/假传感器都在主循环
  * 顺序调用本模块；g_inside_evaluate 防止动作/回调路径重入求值。
@@ -17,6 +20,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "smarthome_types.h"
 #include "smarthome_storage.h"
@@ -46,6 +50,13 @@ static void         *g_event_args[SM_EVENT_CB_SLOTS];
 
 static bool          g_inside_evaluate;           /* 求值重入保护 */
 static bool          g_inited;                    /* 是否已完成初始化 */
+
+/* 设备状态防抖落盘：任意 on/brightness 变更（UI/网络/规则联动同源）后
+ * 统一延迟落盘 devices.json；temp 不落盘（假传感器 5s 步进，恢复无意义
+ * 且会造成无意义擦写）。主循环经 sm_engine_tick 到期统一写。 */
+#define SM_DEV_SAVE_DELAY_MS  500
+static bool          s_dev_dirty;                 /* 有待落盘的状态变更 */
+static long          s_dirty_ms;                  /* 最后变更时刻（ms） */
 
 /****************************************************************************
  * 设备/属性基础工具
@@ -145,6 +156,16 @@ static bool cond_eval(const sm_condition_t *cond)
     }
 }
 
+/* 当前毫秒时钟（与 sim_sensor 同款溢出安全写法） */
+static long now_ms(void)
+{
+  clock_t t = clock();
+
+  /* 分离秒/余数避免 32 位平台 clock()*1000 溢出 */
+  return (long)(t / CLOCKS_PER_SEC) * 1000L +
+         (long)(t % CLOCKS_PER_SEC) * (1000L / CLOCKS_PER_SEC);
+}
+
 /* 唯一的状态更新路径：校验 + 写状态（不触发求值，避免重入） */
 static int apply_set(const char *id, sm_prop_t prop, int value,
                      sm_device_t **out_dev)
@@ -169,6 +190,12 @@ static int apply_set(const char *id, sm_prop_t prop, int value,
       break;
     default:
       return SM_ERR_INVALID;
+    }
+
+  if (prop != SM_PROP_TEMP)
+    {
+      s_dev_dirty = true;
+      s_dirty_ms = now_ms();
     }
 
   if (out_dev != NULL)
@@ -362,6 +389,12 @@ int sm_engine_init(void)
             }
           /* 未知 id 忽略：设备表型号由出厂定义，文件只恢复状态 */
         }
+
+      if (count > 0)
+        {
+          printf("[SM] device state restored %d from /data/devices.json\n",
+                 count);
+        }
     }
   else if (ret != SM_ERR_NOTFOUND)
     {
@@ -384,6 +417,10 @@ int sm_engine_init(void)
           return ret;
         }
     }
+  else
+    {
+      printf("[SM] rules loaded %d from /data/rules.json\n", count);
+    }
 
   memcpy(g_rules, rules, (size_t)count * sizeof(sm_rule_t));
   g_rule_count = count;
@@ -398,7 +435,23 @@ int sm_engine_init(void)
 
 void sm_engine_tick(void)
 {
-  /* v1 预留：周期性事务（规则求值由 sm_set_device / 假传感器触发） */
+  /* 设备状态防抖落盘：距最后一次 on/brightness 变更 500ms 后统一写一次
+   * devices.json（滑条拖动/场景批量设置/联动链收敛后只落一次盘）。
+   * 失败只打印不重试，不阻塞主循环，下次变更会再次触发。 */
+  if (g_inited && s_dev_dirty &&
+      (now_ms() - s_dirty_ms) >= SM_DEV_SAVE_DELAY_MS)
+    {
+      s_dev_dirty = false;
+
+      if (sm_storage_save_devices(g_devices, g_dev_count) != SM_OK)
+        {
+          printf("[SM] devices.json save failed\n");
+        }
+      else
+        {
+          printf("[SM] device state saved\n");
+        }
+    }
 }
 
 int sm_engine_set_event_cb(sm_event_cb_t cb, void *arg)
@@ -593,5 +646,13 @@ int sm_rules_restore_default(void)
 
   g_rule_count = count;
   rules_rearm();
+
+  /* 恢复出厂同步落盘覆盖旧规则文件（Reset 后断电重启仍为出厂集）；
+   * 失败（如 /data 未挂载）不影响内存已生效，仅打印 */
+  if (sm_storage_save_rules(g_rules, g_rule_count) != SM_OK)
+    {
+      printf("[SM] factory rules save failed, memory-only\n");
+    }
+
   return SM_OK;
 }
