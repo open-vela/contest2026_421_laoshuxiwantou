@@ -49,6 +49,31 @@ int main(int argc, FAR char *argv[])
 {
   lv_nuttx_dsc_t info;
   lv_nuttx_result_t result;
+  int i;
+
+  /* 第二实例守卫：面板已在运行时，仅允许 --phone 以独立模式再起一个
+   * "手机"回环客户端（纯 socket，不碰 LVGL/引擎），播完一轮即退出。 */
+  if (lv_is_initialized())
+    {
+      if (argc > 1 && strcmp(argv[1], "--phone") == 0)
+        {
+          printf("[SM] panel already running, phone demo standalone\n");
+          sm_phone_demo_start(9000);
+
+          /* 25s 足够一轮：5s 首连 + 6 步 x 2s */
+          for (i = 0; i < 500; i++)
+            {
+              sm_phone_demo_tick();
+              usleep(50 * 1000);
+            }
+        }
+      else
+        {
+          printf("[SM] smarthome panel already running\n");
+        }
+
+      return 0;
+    }
 
   (void)argc;
   (void)argv;
