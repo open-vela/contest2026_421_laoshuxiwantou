@@ -46,6 +46,7 @@
 #define SM_TOUCH_DEVPATH "/dev/input0"
 
 static uint32_t g_loop_beats;
+static uint32_t g_loop_count;
 
 /****************************************************************************
  * Public Functions
@@ -159,13 +160,30 @@ int main(int argc, FAR char *argv[])
     {
       uint32_t idle;
 
+      if (g_loop_count < 3)
+        {
+          printf("[SM] loop %u: call lv_timer_handler\n", g_loop_count + 1);
+        }
+
       idle = lv_timer_handler();
+
+      if (g_loop_count < 3)
+        {
+          printf("[SM] loop %u: timer_handler done (idle=%u)\n",
+                 g_loop_count + 1, idle);
+        }
 
       sm_engine_tick();
       sm_sim_sensor_tick();
       sm_ui_tick();
       sm_net_tick();
 
+      if (g_loop_count < 3)
+        {
+          printf("[SM] loop %u: ticks done\n", g_loop_count + 1);
+        }
+
+      g_loop_count++;
       if (++g_loop_beats >= SM_LOOP_BEAT_PERIOD)
         {
           sm_device_t *sensor = sm_get_device("sensor1");
